@@ -55,7 +55,7 @@ objects:
           containers:
             - name: turbine-server
               namespace: ${PROJECT}
-              image: registry.hub.docker.com/fabric8/turbine-server:1.0.28
+              image: registry.hub.docker.com/fabric8/turbine-server:${VERSION}
               env:
                 - name: TURBINE_INSTANCEURLSUFFIX
                   value: :8080/actuator/hystrix.stream
@@ -96,7 +96,7 @@ objects:
           containers:
             - name: hystrix-dashboard
               namespace: ${PROJECT}
-              image: registry.hub.docker.com/fabric8/hystrix-dashboard:1.0.28
+              image: registry.hub.docker.com/fabric8/hystrix-dashboard:${VERSION}
               ports:
                 - containerPort: 8080
                   name: http
@@ -132,3 +132,7 @@ parameters:
   - name: HYSTRIX_PROJECT
     description: Name of project that contains the applications with the hystrix streams
     required: true
+  - name: VERSION
+    description: Version of fabric8's docker images
+    required: false
+    value: 1.0.28

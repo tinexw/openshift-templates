@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: hystrix-dashboard
+labels:
+  name: kubeflix
+objects:
+  - kind: ServiceAccount
+    apiVersion: v1
+    metadata:
+      name: turbine
+      namespace: ${PROJECT}
+      labels:
+          app: turbine-server
+  - kind: RoleBinding
+    apiVersion: v1
+    metadata:
+      name: turbine-view
+      namespace: ${PROJECT}
+      labels:
+          app: turbine-server
+    subjects:
+      - kind: ServiceAccount
+        name: turbine
+    roleRef:
+      name: view
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: turbine-server
+      namespace: ${PROJECT}
+      labels:
+        app: turbine-server
+    spec:
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: turbine-server
+        spec:
+          serviceAccountName: turbine
+          containers:
+            - name: turbine-server
+              namespace: ${PROJECT}
+              image: registry.hub.docker.com/fabric8/turbine-server:${VERSION}
+              env:
+                - name: TURBINE_INSTANCEURLSUFFIX
+                  value: :8080/actuator/hystrix.stream
+              ports:
+                - containerPort: 8080
+                  name: http
+      triggers:
+        - type: "ConfigChange"
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: turbine-server
+      namespace: ${PROJECT}
+      labels:
+        app: turbine-server
+    spec:
+      selector:
+        app: turbine-server
+      ports:
+        - port: 80
+          targetPort: http
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: hystrix-dashboard
+      namespace: ${PROJECT}
+      labels:
+        app: hystrix-dashboard
+    spec:
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: hystrix-dashboard
+        spec:
+          containers:
+            - name: hystrix-dashboard
+              namespace: ${PROJECT}
+              image: registry.hub.docker.com/fabric8/hystrix-dashboard:${VERSION}
+              ports:
+                - containerPort: 8080
+                  name: http
+      triggers:
+        - type: "ConfigChange"
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: hystrix-dashboard
+      namespace: ${PROJECT}
+      labels:
+        app: hystrix-dashboard
+    spec:
+      selector:
+        app: hystrix-dashboard
+      ports:
+        - port: 80
+          targetPort: http
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: hystrix-dashboard
+      namespace: ${PROJECT}
+      labels:
+        app: hystrix-dashboard
+    spec:
+      to:
+        name: hystrix-dashboard
+parameters:
+  - name: PROJECT
+    description: Project in which objects are created.
+    required: true
+  - name: VERSION
+    description: Version of fabric8's docker images
+    required: false
+    value: 1.0.28
